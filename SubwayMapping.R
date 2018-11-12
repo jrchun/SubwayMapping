@@ -1,5 +1,5 @@
 rm(list = ls())
-setwd('C:\\Users\\jrchu\\Desktop')
+setwd('C:\\github\\Project\\SubwayMapping')
 data <- read.csv('subway.csv')
 
 colnames(data)
