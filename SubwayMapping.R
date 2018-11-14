@@ -15,7 +15,9 @@ seoulsubway[which(seoulsubway == '양평역')] <- '양평(경의중앙선)역'
 data$전철역명[which(data$전철역명 == '서울(경의중앙선)')] <- '서울'
 data$전철역명[which(data$전철역명 == '신촌(경의중앙선)')] <- '신촌'
 
-data$전철역명[which(data$전철역명 == '효창공원앞')] <- '신촌'
+data$전철역명[which(data$전철역명 == '효창공원앞')] <- '효창공원'
+
+
   
 data$전철역명 <- paste(data$전철역명, '역', sep = "")
 data <- subset(data, data$'전철역명' %in% seoulsubway)
