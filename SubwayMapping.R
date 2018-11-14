@@ -1,10 +1,12 @@
 rm(list = ls())
 setwd('C:\\github\\Project\\SubwayMapping')
 data <- read.csv('subway.csv')
-data$전철역명
+
 theater <- read.csv('theater.csv', sep = '\t')
 theater[is.na(theater)] <- 0
 seoulsubway <- as.vector(unique(theater$'지하철역'))
+
+
 
 sum(is.na(data[,'X좌표']))
 data <- data[!is.na(data[,'X좌표']), ]
