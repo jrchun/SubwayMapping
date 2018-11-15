@@ -20,7 +20,7 @@ data$전철역명[which(data$전철역명 == '신촌(경의중앙선)')] <- '신
 data$전철역명[which(data$전철역명 == '효창공원앞')] <- '효창공원'
 
 
-  
+order(seoulsubway)
 data$전철역명 <- paste(data$전철역명, '역', sep = "")
 data <- subset(data, data$'전철역명' %in% seoulsubway)
 unique(data$'전철역명')
