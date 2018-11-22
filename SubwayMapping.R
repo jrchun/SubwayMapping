@@ -68,6 +68,16 @@ MM <- ggmap(Map_Seoul)
 ##좌표 기준 280개 지하철역 맵핑 (1개의 지하철역 영역 밖)
 MM2 <- MM +
   geom_point(aes(x= X , y= Y), data = all_data) 
+##점이 몰려있다. 어쩌면 특정 동/구를 핫플로 찾아낼 수 있을까?
+
+#상위 20개의 언급량 값을 갖는 idx
+idx <- which(all_data$Buzz_Sum >= sort(all_data$Buzz_Sum, decreasing=TRUE)[20])
+all_data$Buzz_Sum[idx]
+
+MM3 <- MM +
+  geom_point(aes(x = X, y = Y, size = log(Buzz_Sum)), data = all_data[idx,]) + 
+  geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data=all_data[idx, ]) + 
+  labs(x="경도", y="위도")
 
 
 #######수집데이터 모양 확인하기.
@@ -75,7 +85,9 @@ lapply(all_data[, -c(1, 2)], summary)
 
 all_data[which(all_data$Buzz_Sum == max(all_data$Buzz_Sum)), ]
 #강남역이 150만으로 다른 지하철역에 비하여 압도적인 언급량을 보이는 것을 알 수 있다. Outlier의 가능성!
-
+pairs(log(all_buzz[, -1]))
+pairs(all_buzz[, -1])
+#술집&맛집&카페&데이트&총계 간의 상관관계를 scatter_plot으로 확인, 이상하게 데이트코스 변수는 상관관계가 약해보인다.
 
 ##Buzz_Sum의 데이터 모양 확인하기
 par(mfrow = c(2,1))
