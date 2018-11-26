@@ -70,15 +70,29 @@ MM2 <- MM +
   geom_point(aes(x= X , y= Y), data = all_data) 
 ##점이 몰려있다. 어쩌면 특정 동/구를 핫플로 찾아낼 수 있을까?
 
-#상위 20개의 언급량 값을 갖는 idx
-idx <- which(all_data$Buzz_Sum >= sort(all_data$Buzz_Sum, decreasing=TRUE)[20])
-all_data$Buzz_Sum[idx]
+#조금 더 확대해서 상위 N개의 역만 나타내보자.
+Map_Seoul_B <- get_map(location=c(lat=37.55, lon=126.97), zoom=12, maptype="roadmap")
+MM_B <- ggmap(Map_Seoul_B)
 
-MM3 <- MM +
-  geom_point(aes(x = X, y = Y, size = log(Buzz_Sum)), data = all_data[idx,]) + 
-  geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data=all_data[idx, ]) + 
+#Buzz_Sum에서 상위 10개의 언급량 값을 갖는 idx
+idx_10 <- which(all_data$Buzz_Sum >= sort(all_data$Buzz_Sum, decreasing=TRUE)[10])
+# all_data$Buzz_Sum[idx]
+
+#상위 10개의 지하철역 맵핑 (log transformation 활용하여 원크기 조절)
+MM3_10 <- MM_B +
+  geom_point(aes(x = X, y = Y, size = log(Buzz_Sum)), data = all_data[idx_10,]) + 
+  geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data=all_data[idx_10, ]) + 
   labs(x="경도", y="위도")
 
+#Buzz_Sum에서 상위 20개의 언급량 값을 갖는 idx
+idx_20 <- which(all_data$Buzz_Sum >= sort(all_data$Buzz_Sum, decreasing=TRUE)[20])
+# all_data$Buzz_Sum[idx_20]
+
+#상위 20개의 지하철역 맵핑 (log transformation 활용하여 원크기 조절)
+MM3_20 <- MM_B +
+  geom_point(aes(x = X, y = Y, size = log(Buzz_Sum)), data = all_data[idx_20,]) + 
+  geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data=all_data[idx_20, ]) + 
+  labs(x="경도", y="위도")
 
 #######수집데이터 모양 확인하기.
 lapply(all_data[, -c(1, 2)], summary)
@@ -91,15 +105,11 @@ pairs(all_buzz[, -1])
 
 ##Buzz_Sum의 데이터 모양 확인하기
 par(mfrow = c(2,1))
-hist(all_data$Buzz_Sum)
-#너무 왼쪽에 치우쳐 있다. 
-
+hist(all_data$Buzz_Sum) #너무 왼쪽에 치우쳐 있다. 
 ##Log_Transformation!!
-hist(log(all_data$Buzz_Sum))
-#강남역 빼고는 볼만하다.
+hist(log(all_data$Buzz_Sum)) #강남역 빼고는 볼만하다.
 
-
-colnames(all_data)
+par(mfrow = c(1,1))
 
 all_data$Sum
 table(all_data$Sum)
