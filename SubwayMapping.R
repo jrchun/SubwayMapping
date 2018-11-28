@@ -54,6 +54,87 @@ nrow(all_data)
 write.csv(all_data, 'Merging_data_final.csv')
 colSums(is.na(all_data))
 
+###각 변수별 분포 확인하기
+head(all_data)
+
+#plot을 그리는데 필요한 열만 남기고 나머지 열은 모두 삭제 
+all_data_p <- subset(all_data, select = c('Sum', '맛집', '카페', '데이트', '데이트코스', '술집', 'Buzz_Sum'))
+head(all_data_p)
+
+#변수 설정 
+subway<-all_data_p$Station
+theater<-all_data_p$Sum
+food<-all_data_p$맛집
+cafe<-all_data_p$카페
+date<-all_data_p$데이트
+date2<-all_data_p$데이트코스
+bar<-all_data_p$술집
+buzzsum<-all_data_p$Buzz_Sum
+
+#결측값 제거 
+theater[is.na(theater)] <- 0
+food[is.na(food)] <- 0
+cafe[is.na(cafe)] <- 0
+date[is.na(date)] <- 0
+date2[is.na(date2)] <- 0
+bar[is.na(bar)] <- 0
+buzzsum[is.na(buzzsum)] <- 0
+
+
+data_p<-cbind(theater,food,cafe,date,date2,bar,buzzsum)
+head(data_p)
+
+
+#boxplot - 원본 데이터
+boxplot(data_p,col=rainbow(7),ylim=c(0,20000),main="Boxplot of data")
+#theater이 다른 데이터에 비해 심하게 데이터 수가 적음을 알 수 있다.
+
+#histogram - 원본 데이터 
+par(mfrow=c(3,3))
+hist(theater)
+hist(food)
+hist(cafe)
+hist(date,xlim=c(0,10000))
+hist(date2,xlim=c(0,1000))
+hist(bar,xlim=c(0,10000))
+hist(buzzsum,xlim=c(0,500000))
+#히스토그램을 통해서 확인해보니 데이터가 분포 차이가 심하다는 것을 알 수 있다.
+
+#데이터를 로그변환함 
+theater2<-log(theater)
+food2<-log(food)
+cafe2<-log(cafe)
+date3<-log(date)
+date4<-log(date2)
+bar2<-log(bar)
+buzzsum2<-log(buzzsum)
+
+data_p2<-cbind(theater2,food2,cafe2,date3,date4,bar2,buzzsum2)
+head(data_p2)
+
+#boxplot - 로그변환 데이터 
+boxplot(data_p2,col=rainbow(7),ylim=c(-5,20),main="Boxplot of logdata")
+#data를 log 변환하니 데이터사이의 분포 차이가 좀 줄었음을 알 수 있다.
+
+#histogram - 로그변환 데이터 
+par(mfrow=c(3,3))
+hist(theater2)
+hist(food2)
+hist(cafe2)
+hist(date3)
+hist(date4)
+hist(bar2)
+hist(buzzsum2)
+#로그변환을하니 어느정도 변수들간의 차이가 줄어듬을 알 수 있다.
+
+####
+
+
+
+
+
+
+
 
 ##구글맵 API
 key <- ""
@@ -120,3 +201,19 @@ table(all_data$Sum)
 all_buzz <- all_data[, c('Station', '맛집', '카페', '데이트', '데이트코스', '술집', 'Buzz_Sum')]
 all_theater <- all_data[, c('Station' ,'C', 'L', 'M', 'Sum')]
 
+
+
+###K-means Clustering : 첫번째 시도
+str(all_data)
+K_data <- as.data.frame(scale(all_data[,-c(1:8, 14)]))
+K_data <- K_data[-which(K_data$맛집>10), ]
+data_kmeans <- kmeans(K_data, centers = 3, iter.max = 10000)
+
+data_kmeans$cluster
+data_kmeans$centers
+
+K_data$cluster <- as.factor(data_kmeans$cluster)
+qplot(맛집, 카페, colour = cluster, data = K_data)
+
+#정규화 + 강남역(Outlier) 제거 후에 군집분석 시도. 아름답게 나오지 않으며, 이는 곧 지표가 부족함을 뜻한다.
+#인구밀도등으로 나누어준 정확한 수치가 필요하다~~!!!!
