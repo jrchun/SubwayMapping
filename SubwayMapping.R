@@ -127,6 +127,23 @@ hist(bar2)
 hist(buzzsum2)
 #로그변환을하니 어느정도 변수들간의 차이가 줄어듬을 알 수 있다.
 
+
+
+#######수집데이터 모양 확인하기.
+lapply(all_data[, -c(1, 2)], summary)
+
+#강남역이 150만으로 다른 지하철역에 비하여 압도적인 언급량을 보이는 것을 알 수 있다. Outlier의 가능성!
+pairs(log(all_buzz[, -1]))
+pairs(all_buzz[, -1])
+#술집&맛집&카페&데이트&총계 간의 상관관계를 scatter_plot으로 확인, 이상하게 데이트코스 변수는 상관관계가 약해보인다.
+
+##Buzz_Sum의 데이터 모양 확인하기
+par(mfrow = c(2,1))
+hist(all_data$Buzz_Sum) #너무 왼쪽에 치우쳐 있다. 
+##Log_Transformation!!
+hist(log(all_data$Buzz_Sum)) #강남역 빼고는 볼만하다.
+
+
 ####
 
 
@@ -149,8 +166,22 @@ str(data)
 hist(data$승하차인원)
 data[which(data$Station == '강남역'), '승하차인원']
 
+#승하차인원은 총 37일의 총합 -> 평균값으로 계산한다.
+data$승하차인원 <- (data$승하차인원)/37
+
 data$Buzz_prop <- (data$Buzz_Sum)/(data$승하차인원)
 hist(data$Buzz_prop)
+
+data[which(data$Buzz_prop == max(data$Buzz_prop)), ]
+
+mydata <- data
+wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
+
+for (i in 2:15) wss[i] <- sum(kmeans(mydata,
+                                     centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+
 
 
 
@@ -170,68 +201,52 @@ MM2 <- MM +
 ##점이 몰려있다. 어쩌면 특정 동/구를 핫플로 찾아낼 수 있을까?
 
 #조금 더 확대해서 상위 N개의 역만 나타내보자.
-Map_Seoul_B <- get_map(location=c(lat=37.55, lon=126.97), zoom=12, maptype="roadmap")
+Map_Seoul_B <- get_map(location=c(lat=37.55, lon=126.97), zoom=11, maptype="roadmap")
 MM_B <- ggmap(Map_Seoul_B)
-
+?get_map
 #Buzz_Sum에서 상위 10개의 언급량 값을 갖는 idx
-idx_10 <- which(all_data$Buzz_Sum >= sort(all_data$Buzz_Sum, decreasing=TRUE)[10])
+idx_10 <- which(data$Buzz_prop >= sort(data$Buzz_prop, decreasing=TRUE)[10])
 # all_data$Buzz_Sum[idx]
 
 #상위 10개의 지하철역 맵핑 (log transformation 활용하여 원크기 조절)
 MM3_10 <- MM_B +
-  geom_point(aes(x = X, y = Y, size = log(Buzz_Sum)), data = all_data[idx_10,]) + 
-  geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data=all_data[idx_10, ]) + 
+  geom_point(aes(x = X, y = Y, size = Buzz_prop), data = data[idx_10,]) + 
+  geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data[idx_10, ]) + 
   labs(x="경도", y="위도")
 
 #Buzz_Sum에서 상위 20개의 언급량 값을 갖는 idx
-idx_20 <- which(all_data$Buzz_Sum >= sort(all_data$Buzz_Sum, decreasing=TRUE)[20])
+idx_20 <- which(data$Buzz_prop >= sort(data$Buzz_prop, decreasing=TRUE)[20])
 # all_data$Buzz_Sum[idx_20]
 
 #상위 20개의 지하철역 맵핑 (log transformation 활용하여 원크기 조절)
 MM3_20 <- MM_B +
-  geom_point(aes(x = X, y = Y, size = log(Buzz_Sum)), data = all_data[idx_20,]) + 
-  geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data=all_data[idx_20, ]) + 
+  geom_point(aes(x = X, y = Y, size = Buzz_prop), data = data[idx_20,]) + 
+  geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data[idx_20, ]) + 
   labs(x="경도", y="위도")
 
-#######수집데이터 모양 확인하기.
-lapply(all_data[, -c(1, 2)], summary)
 
-all_data[which(all_data$Buzz_Sum == max(all_data$Buzz_Sum)), ]
-#강남역이 150만으로 다른 지하철역에 비하여 압도적인 언급량을 보이는 것을 알 수 있다. Outlier의 가능성!
-pairs(log(all_buzz[, -1]))
-pairs(all_buzz[, -1])
-#술집&맛집&카페&데이트&총계 간의 상관관계를 scatter_plot으로 확인, 이상하게 데이트코스 변수는 상관관계가 약해보인다.
-
-##Buzz_Sum의 데이터 모양 확인하기
-par(mfrow = c(2,1))
-hist(all_data$Buzz_Sum) #너무 왼쪽에 치우쳐 있다. 
-##Log_Transformation!!
-hist(log(all_data$Buzz_Sum)) #강남역 빼고는 볼만하다.
-
-par(mfrow = c(1,1))
-
-all_data$Sum
-table(all_data$Sum)
-#0이 213개, 0.3이 3개, 0.5가 11개, 1이 38개, 1.5가 5개, 2가 7개, 2.5가 3개
-# -> 올바른 지표로 사용가능할까? 가중치를 얼마나 주는게 영향력있을까?
-
-##일단 Buzz 데이터와 theater 데이터를 분할해서 모양을 확인하자.
-all_buzz <- all_data[, c('Station', '맛집', '카페', '데이트', '데이트코스', '술집', 'Buzz_Sum')]
-all_theater <- all_data[, c('Station' ,'C', 'L', 'M', 'Sum')]
 
 
 
 ###K-means Clustering : 첫번째 시도
-str(all_data)
-K_data <- as.data.frame(scale(all_data[,-c(1:8, 14)]))
-K_data <- K_data[-which(K_data$맛집>10), ]
-data_kmeans <- kmeans(K_data, centers = 3, iter.max = 10000)
+str(data)
+K_data <- as.data.frame(data[,-c(1, 5, 6, 14,15)])
+colnames(K_data)
+#K_data <- K_data[-which(K_data$맛집>10), ]
 
-data_kmeans$cluster
-data_kmeans$centers
+data_kmeans <- kmeans(K_data, centers = 5, iter.max = 10000)
 
+data$cluster <- as.factor(data_kmeans$cluster)
 K_data$cluster <- as.factor(data_kmeans$cluster)
-qplot(맛집, 카페, colour = cluster, data = K_data)
+#data_kmeans$centers
+
+qplot(Y, X, colour = cluster, data = data[idx_20, ])
+
+MM4 <- MM_B +
+  geom_point(aes(x = X, y = Y, color = cluster), data = data[idx_20, ]) + 
+  geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data[idx_20, ]) + 
+  labs(x="경도", y="위도")
+
 
 #정규화 + 강남역(Outlier) 제거 후에 군집분석 시도. 아름답게 나오지 않으며, 이는 곧 지표가 부족함을 뜻한다.
 #인구밀도등으로 나누어준 정확한 수치가 필요하다~~!!!!
