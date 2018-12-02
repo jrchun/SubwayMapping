@@ -132,7 +132,25 @@ hist(buzzsum2)
 
 
 
+rm(list = ls())
 
+
+data <- read.csv('Merging_data_final(수정).csv', stringsAsFactors = F)
+head(data)
+colnames(data)
+str(data)
+data$C <- as.factor(data$C)
+data$L <- as.factor(data$L)
+data$M <- as.factor(data$M)
+data <- subset(data, select = -c(Line))
+data <- subset(data, select = -c(Sum))
+
+str(data)
+hist(data$승하차인원)
+data[which(data$Station == '강남역'), '승하차인원']
+
+data$Buzz_prop <- (data$Buzz_Sum)/(data$승하차인원)
+hist(data$Buzz_prop)
 
 
 
@@ -148,7 +166,7 @@ MM <- ggmap(Map_Seoul)
 
 ##좌표 기준 280개 지하철역 맵핑 (1개의 지하철역 영역 밖)
 MM2 <- MM +
-  geom_point(aes(x= X , y= Y), data = all_data) 
+  geom_point(aes(x = X , y = Y), data = data) 
 ##점이 몰려있다. 어쩌면 특정 동/구를 핫플로 찾아낼 수 있을까?
 
 #조금 더 확대해서 상위 N개의 역만 나타내보자.
