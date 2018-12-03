@@ -3,86 +3,139 @@ rm(list = ls())
 library(dplyr)
 library(devtools)
 library(ggmap)
+library(Gmedian)
 
 #Data merge (Subway location + theater)
 setwd('C:\\Users\\jrchu\\Desktop\\빅데이터\\data')
 
-data <- read.csv('subway.csv', stringsAsFactors = F)
-theater <- read.csv('theater_1.csv', stringsAsFactors = F)
-theater[is.na(theater)] <- 0
-buzz <- read.csv('buzz.csv', sep = '\t', stringsAsFactors = F)
-buzz_2 <- read.csv('buzz_2.csv', stringsAsFactors = F)
-colnames(buzz) <- colnames(buzz_2)
-buzz_all <- rbind(buzz, buzz_2)
+data <- read.csv('Merging_data_final(수정).csv', stringsAsFactors = F)
+head(data)
+colnames(data)
+str(data)
 
-sum(is.na(data[,'X좌표']))
-data <- data[!is.na(data[,'X좌표']), ]
-data$전철역명 <- as.vector(data$전철역명)
-data <- subset(data, select = -c(X좌표))
-data <- subset(data, select = -c(Y좌표))
-data <- subset(data, select = -c(전철역코드))
-data <- subset(data, select = -c(호선))
-data <- subset(data, select = -c(외부코드))
-data <- subset(data, select = -c(사이버스테이션))
+##불필요한 변수 삭제
+#호선 변수는..
+data <- subset(data, select = -c(Line))
 
-colnames(data) <- c('Station', 'Y', 'X')
-colnames(theater) <- c('Line', 'Station', 'C', 'L', 'M', 'Sum')
-colnames(buzz_all) <- c('Station', 'Buzz_Sum', '맛집', '카페', '데이트', '데이트코스', '술집')
-buzz_all <- buzz_all[,c(1, 3:7, 2)]
+#영화관의 유무보다는 수를 숫자형 데이터로 입력하자.
+data <- subset(data, select = -c(C))
+data <- subset(data, select = -c(L))
+data <- subset(data, select = -c(M))
 
-theater$Station[which(theater$Station == '총신대입구역/이수역')] <- '총신대입구(이수)역'
-buzz_all$Station[which(buzz_all$Station == '이수')] <- '총신대입구(이수)'
-theater$Station[which(theater$Station == '우정산역')] <- '우장산역'
-data$Station[which(data$Station == '양평(경의중앙선)')] <- '양평'
-data$Station[which(data$Station == '서울(경의중앙선)')] <- '서울'
-data$Station[which(data$Station == '신촌(경의중앙선)')] <- '신촌'
-data$Station[which(data$Station == '효창공원앞')] <- '효창공원'
+str(data)
+hist(data$승하차인원)
 
-data$Station <- paste(data$Station, '역', sep = "")
-buzz_all$Station <- paste(buzz_all$Station, '역', sep = "")
-data <- subset(data, data$Station %in% theater$Station)
+data[which(data$승하차인원 == max(data$승하차인원)), ]
+#잠실이 가장 큰 값을 지니는 것을 알 수 있다.
 
-data <- data[!duplicated(data$Station), ]
+#승하차인원은 총 37일의 총합 -> 평균값으로 계산한다.
+data$승하차인원 <- (data$승하차인원)/37
 
-data_buzz <- merge(data, buzz_all, key = 'Station', all = TRUE)
-all_data <- merge(theater, data_buzz, key = 'Station', all = TRUE)
-all_data <- all_data[!is.na(all_data[,'X']), ]
-#NA가 포함된 데이터
-all_data[!complete.cases(all_data),]
+#Buzz_sum을 평균승하차인원으로 나누어 인원대비 언급량 변수를 만든다.
+data$Buzz_prop <- (data$Buzz_Sum)/(data$승하차인원)
 
-nrow(all_data)
-write.csv(all_data, 'Merging_data_final.csv')
-colSums(is.na(all_data))
-
-###각 변수별 분포 확인하기
-head(all_data)
-
-#plot을 그리는데 필요한 열만 남기고 나머지 열은 모두 삭제 
-all_data_p <- subset(all_data, select = c('Sum', '맛집', '카페', '데이트', '데이트코스', '술집', 'Buzz_Sum'))
-head(all_data_p)
-
-#변수 설정 
-subway<-all_data_p$Station
-theater<-all_data_p$Sum
-food<-all_data_p$맛집
-cafe<-all_data_p$카페
-date<-all_data_p$데이트
-date2<-all_data_p$데이트코스
-bar<-all_data_p$술집
-buzzsum<-all_data_p$Buzz_Sum
-
-#결측값 제거 
-theater[is.na(theater)] <- 0
-food[is.na(food)] <- 0
-cafe[is.na(cafe)] <- 0
-date[is.na(date)] <- 0
-date2[is.na(date2)] <- 0
-bar[is.na(bar)] <- 0
-buzzsum[is.na(buzzsum)] <- 0
+data[which(data$Buzz_prop == max(data$Buzz_prop)), ]
+#서울역의 인원대비 언급량 변수값이 너무 적다..!
 
 
-data_p<-cbind(theater,food,cafe,date,date2,bar,buzzsum)
-head(data_p)
+###############Mapping작업###############
+
+
+##구글맵 API
+key <- ""
+register_google(key = key)
+
+
+Map_Seoul <- get_map(location=c(lat=37.55, lon=126.97), zoom=11, maptype="roadmap") # 서울역의 위도 경도
+
+#서울역 기준 서울 지도
+MM <- ggmap(Map_Seoul)
+
+##좌표 기준 280개 지하철역 맵핑 (1개의 지하철역 영역 밖)
+MM2 <- MM +
+  geom_point(aes(x = X , y = Y), data = data)
+##점이 몰려있다. 어쩌면 특정 동/구를 핫플로 찾아낼 수 있을까?
+
+#조금 더 확대해서 상위 N개의 역만 나타내보자.
+Map_Seoul_B <- get_map(location=c(lat=37.55, lon=126.97), zoom=11, maptype="roadmap")
+MM_B <- ggmap(Map_Seoul_B)
+
+#Buzz_Prop에서 상위 20개의 언급량 값을 갖는 idx
+idx_20 <- which(data$Buzz_prop >= sort(data$Buzz_prop, decreasing=TRUE)[20])
+# all_data$Buzz_Sum[idx_20]
+
+#상위 20개의 지하철역 맵핑 (log transformation 활용하여 원크기 조절)
+MM3_20 <- MM_B +
+  geom_point(aes(x = X, y = Y, size = Buzz_prop), data = data[idx_20,]) + 
+  geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data[idx_20, ]) + 
+  labs(x="경도", y="위도")
+
+
+###############군집분석###############
+
+
+###K-means Clustering : 첫번째 시도
+
+mydata <- subset(data, select = c(영화관, 맛집, 카페, 데이트, 데이트코스, 술집, Buzz_prop, 상가개수)) #혼잡도_평일, 혼잡도_주말, 
+
+wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(mydata, centers=i)$withinss)
+plot(1:15, wss, type="b",
+     main = "K-means clustering", 
+     xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+
+#Elbow point를 3으로 설정
+
+K_data <- mydata
+
+data_kmeans <- kmeans(K_data, centers = 3, iter.max = 10000)
+
+data$cluster_mean <- as.factor(data_kmeans$cluster)
+
+
+
+MM4_mean <- MM_B +
+  geom_point(aes(x = X, y = Y, color = cluster_mean), data = data, size = 3) + 
+  #geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data) + 
+  labs(x="경도", y="위도")
+
+
+###K-median Clustering : 두번째 시도
+K_data <- as.data.frame(mydata)
+wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
+
+for (i in 2:15) wss[i] <- sum(kGmedian(mydata, ncenters=i)$withinsrs)
+
+plot(1:15, wss, type="b", 
+     main = "K-median clustering", 
+     xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+
+
+plot(2:15, wss[2:15], type="b", 
+     main = "K-median clustering", 
+     xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+
+#Elbow point를 2로 설정
+
+data_kmedian <- kGmedian(mydata, ncenters=6)
+
+data$cluster_median <- as.factor(data_kmedian$cluster)
+#data_kmeans$centers
+
+
+MM4_median <- MM_B +
+  geom_point(aes(x = X, y = Y, color = cluster_median), data = data, size = 3) + 
+  #geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data) + 
+  labs(x="경도", y="위도")
+
+
+str(read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\hash\\st-hashtag.txt', sep = '\n', encoding = 'UTF-8'))
+?read.table
+
+
 
 
 #boxplot - 원본 데이터
@@ -128,7 +181,6 @@ hist(buzzsum2)
 #로그변환을하니 어느정도 변수들간의 차이가 줄어듬을 알 수 있다.
 
 
-
 #######수집데이터 모양 확인하기.
 lapply(all_data[, -c(1, 2)], summary)
 
@@ -142,106 +194,3 @@ par(mfrow = c(2,1))
 hist(all_data$Buzz_Sum) #너무 왼쪽에 치우쳐 있다. 
 ##Log_Transformation!!
 hist(log(all_data$Buzz_Sum)) #강남역 빼고는 볼만하다.
-
-
-####
-
-
-
-
-rm(list = ls())
-
-library(dplyr)
-library(devtools)
-library(ggmap)
-
-#Data merge (Subway location + theater)
-setwd('C:\\Users\\jrchu\\Desktop\\빅데이터\\data')
-
-data <- read.csv('Merging_data_final(수정).csv', stringsAsFactors = F)
-head(data)
-colnames(data)
-str(data)
-
-data <- subset(data, select = -c(Line))
-data <- subset(data, select = -c(C))
-data <- subset(data, select = -c(L))
-data <- subset(data, select = -c(M))
-
-str(data)
-hist(data$승하차인원)
-
-#승하차인원은 총 37일의 총합 -> 평균값으로 계산한다.
-data$승하차인원 <- (data$승하차인원)/37
-
-#Buzz_sum을 평균승하차인원으로 나누어 인원대비 언급량 변수를 만든다.
-data$Buzz_prop <- (data$Buzz_Sum)/(data$승하차인원)
-
-data[which(data$Buzz_prop == max(data$Buzz_prop)), ]
-#서울역의 인원대비 언급량 변수값이 너무 적다..!
-str(data)
-
-
-###############Mapping작업###############
-
-
-##구글맵 API
-key <- ""
-register_google(key = key)
-
-
-Map_Seoul <- get_map(location=c(lat=37.55, lon=126.97), zoom=11, maptype="roadmap") # 서울역의 위도 경도
-
-#서울역 기준 서울 지도
-MM <- ggmap(Map_Seoul)
-
-##좌표 기준 280개 지하철역 맵핑 (1개의 지하철역 영역 밖)
-MM2 <- MM +
-  geom_point(aes(x = X , y = Y), data = data)
-##점이 몰려있다. 어쩌면 특정 동/구를 핫플로 찾아낼 수 있을까?
-
-#조금 더 확대해서 상위 N개의 역만 나타내보자.
-Map_Seoul_B <- get_map(location=c(lat=37.55, lon=126.97), zoom=11, maptype="roadmap")
-MM_B <- ggmap(Map_Seoul_B)
-
-#Buzz_Prop에서 상위 20개의 언급량 값을 갖는 idx
-idx_20 <- which(data$Buzz_prop >= sort(data$Buzz_prop, decreasing=TRUE)[20])
-# all_data$Buzz_Sum[idx_20]
-
-#상위 20개의 지하철역 맵핑 (log transformation 활용하여 원크기 조절)
-MM3_20 <- MM_B +
-  geom_point(aes(x = X, y = Y, size = Buzz_prop), data = data[idx_20,]) + 
-  geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data[idx_20, ]) + 
-  labs(x="경도", y="위도")
-
-
-###############군집분석###############
-
-
-###K-means Clustering : 첫번째 시도
-
-mydata <- subset(data, select = c(Sum, 맛집, 카페, 데이트, 데이트코스, 술집, Buzz_Sum, 승하차인원, 혼잡도_평일, 혼잡도_주말, 상가개수))
-wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
-
-for (i in 2:15) wss[i] <- sum(kmeans(mydata, centers=i)$withinss)
-plot(1:15, wss, type="b", xlab="Number of Clusters",
-     ylab="Within groups sum of squares")
-
-#Elbow point를 4로 설정
-
-K_data <- as.data.frame(mydata)
-colnames(K_data)
-#K_data <- K_data[-which(K_data$맛집>10), ]
-
-data_kmeans <- kmeans(K_data, centers = 4, iter.max = 10000)
-
-data$cluster <- as.factor(data_kmeans$cluster)
-K_data$cluster <- as.factor(data_kmeans$cluster)
-#data_kmeans$centers
-
-qplot(Y, X, colour = cluster, data = data[idx_20, ])
-
-MM4 <- MM_B +
-  geom_point(aes(x = X, y = Y, color = cluster), data = data[idx_20, ]) + 
-  geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data[idx_20, ]) + 
-  labs(x="경도", y="위도")
