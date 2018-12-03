@@ -151,6 +151,12 @@ hist(log(all_data$Buzz_Sum)) #강남역 빼고는 볼만하다.
 
 rm(list = ls())
 
+library(dplyr)
+library(devtools)
+library(ggmap)
+
+#Data merge (Subway location + theater)
+setwd('C:\\Users\\jrchu\\Desktop\\빅데이터\\data')
 
 data <- read.csv('Merging_data_final(수정).csv', stringsAsFactors = F)
 head(data)
@@ -164,15 +170,16 @@ data <- subset(data, select = -c(Sum))
 
 str(data)
 hist(data$승하차인원)
-data[which(data$Station == '강남역'), '승하차인원']
 
 #승하차인원은 총 37일의 총합 -> 평균값으로 계산한다.
 data$승하차인원 <- (data$승하차인원)/37
 
+#Buzz_sum을 평균승하차인원으로 나누어 인원대비 언급량 변수를 만든다.
 data$Buzz_prop <- (data$Buzz_Sum)/(data$승하차인원)
 hist(data$Buzz_prop)
 
 data[which(data$Buzz_prop == max(data$Buzz_prop)), ]
+#서울역의 인원대비 언급량 변수값이 너무 적다..!
 
 mydata <- data
 wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
@@ -181,8 +188,6 @@ for (i in 2:15) wss[i] <- sum(kmeans(mydata,
                                      centers=i)$withinss)
 plot(1:15, wss, type="b", xlab="Number of Clusters",
      ylab="Within groups sum of squares")
-
-
 
 
 ##구글맵 API
