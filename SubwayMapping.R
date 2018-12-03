@@ -162,11 +162,11 @@ data <- read.csv('Merging_data_final(수정).csv', stringsAsFactors = F)
 head(data)
 colnames(data)
 str(data)
-data$C <- as.factor(data$C)
-data$L <- as.factor(data$L)
-data$M <- as.factor(data$M)
+
 data <- subset(data, select = -c(Line))
-data <- subset(data, select = -c(Sum))
+data <- subset(data, select = -c(C))
+data <- subset(data, select = -c(L))
+data <- subset(data, select = -c(M))
 
 str(data)
 hist(data$승하차인원)
@@ -176,18 +176,13 @@ data$승하차인원 <- (data$승하차인원)/37
 
 #Buzz_sum을 평균승하차인원으로 나누어 인원대비 언급량 변수를 만든다.
 data$Buzz_prop <- (data$Buzz_Sum)/(data$승하차인원)
-hist(data$Buzz_prop)
 
 data[which(data$Buzz_prop == max(data$Buzz_prop)), ]
 #서울역의 인원대비 언급량 변수값이 너무 적다..!
+str(data)
 
-mydata <- data
-wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
 
-for (i in 2:15) wss[i] <- sum(kmeans(mydata,
-                                     centers=i)$withinss)
-plot(1:15, wss, type="b", xlab="Number of Clusters",
-     ylab="Within groups sum of squares")
+###############Mapping작업###############
 
 
 ##구글맵 API
@@ -202,24 +197,14 @@ MM <- ggmap(Map_Seoul)
 
 ##좌표 기준 280개 지하철역 맵핑 (1개의 지하철역 영역 밖)
 MM2 <- MM +
-  geom_point(aes(x = X , y = Y), data = data) 
+  geom_point(aes(x = X , y = Y), data = data)
 ##점이 몰려있다. 어쩌면 특정 동/구를 핫플로 찾아낼 수 있을까?
 
 #조금 더 확대해서 상위 N개의 역만 나타내보자.
 Map_Seoul_B <- get_map(location=c(lat=37.55, lon=126.97), zoom=11, maptype="roadmap")
 MM_B <- ggmap(Map_Seoul_B)
-?get_map
-#Buzz_Sum에서 상위 10개의 언급량 값을 갖는 idx
-idx_10 <- which(data$Buzz_prop >= sort(data$Buzz_prop, decreasing=TRUE)[10])
-# all_data$Buzz_Sum[idx]
 
-#상위 10개의 지하철역 맵핑 (log transformation 활용하여 원크기 조절)
-MM3_10 <- MM_B +
-  geom_point(aes(x = X, y = Y, size = Buzz_prop), data = data[idx_10,]) + 
-  geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data[idx_10, ]) + 
-  labs(x="경도", y="위도")
-
-#Buzz_Sum에서 상위 20개의 언급량 값을 갖는 idx
+#Buzz_Prop에서 상위 20개의 언급량 값을 갖는 idx
 idx_20 <- which(data$Buzz_prop >= sort(data$Buzz_prop, decreasing=TRUE)[20])
 # all_data$Buzz_Sum[idx_20]
 
@@ -230,16 +215,25 @@ MM3_20 <- MM_B +
   labs(x="경도", y="위도")
 
 
-
+###############군집분석###############
 
 
 ###K-means Clustering : 첫번째 시도
-str(data)
-K_data <- as.data.frame(data[,-c(1, 5, 6, 14,15)])
+
+mydata <- subset(data, select = c(Sum, 맛집, 카페, 데이트, 데이트코스, 술집, Buzz_Sum, 승하차인원, 혼잡도_평일, 혼잡도_주말, 상가개수))
+wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
+
+for (i in 2:15) wss[i] <- sum(kmeans(mydata, centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+
+#Elbow point를 4로 설정
+
+K_data <- as.data.frame(mydata)
 colnames(K_data)
 #K_data <- K_data[-which(K_data$맛집>10), ]
 
-data_kmeans <- kmeans(K_data, centers = 5, iter.max = 10000)
+data_kmeans <- kmeans(K_data, centers = 4, iter.max = 10000)
 
 data$cluster <- as.factor(data_kmeans$cluster)
 K_data$cluster <- as.factor(data_kmeans$cluster)
@@ -251,7 +245,3 @@ MM4 <- MM_B +
   geom_point(aes(x = X, y = Y, color = cluster), data = data[idx_20, ]) + 
   geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data[idx_20, ]) + 
   labs(x="경도", y="위도")
-
-
-#정규화 + 강남역(Outlier) 제거 후에 군집분석 시도. 아름답게 나오지 않으며, 이는 곧 지표가 부족함을 뜻한다.
-#인구밀도등으로 나누어준 정확한 수치가 필요하다~~!!!!
