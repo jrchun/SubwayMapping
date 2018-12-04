@@ -131,9 +131,28 @@ MM4_median <- MM_B +
   #geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data) + 
   labs(x="경도", y="위도")
 
+hash_data <- read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\hash\\st-hashtag.txt', sep = '\n', encoding = 'UTF-8')
+str(hash_data)
+cnt_data <- read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\nohash\\daily_cnt.txt', sep = '\n', encoding = 'UTF-8',skip = 3)
 
-str(read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\hash\\st-hashtag.txt', sep = '\n', encoding = 'UTF-8'))
-?read.table
+A <- matrix(nrow = 277, ncol = 33)
+
+for (i in 1:277) {
+  {for (j in 1:33)
+    A[i,j] <- unlist(strsplit(as.character(cnt_data[i,]), ','))[j]
+  }
+}
+
+A <- as.data.frame(A)
+A <- A[, -2]
+colnames(A) <- c('Station', 31:1)
+
+A[2, 2:32]
+for (i in 2:ncol(A)) {
+  A[, i] <- as.integer(A[, i])
+}
+
+A$Sum <- apply(A[, 2:32], sum, MARGIN = 1)
 
 
 
