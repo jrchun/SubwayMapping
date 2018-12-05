@@ -16,7 +16,7 @@ colnames(data)
 str(data)
 
 ##불필요한 변수 삭제
-#호선 변수는..
+#호선 변수삭제
 data <- subset(data, select = -c(Line))
 
 #영화관의 유무보다는 수를 숫자형 데이터로 입력하자.
@@ -25,8 +25,10 @@ data <- subset(data, select = -c(L))
 data <- subset(data, select = -c(M))
 
 str(data)
-hist(data$승하차인원)
 
+
+hist(data$승하차인원)
+#비정상적인 분포
 data[which(data$승하차인원 == max(data$승하차인원)), ]
 #잠실이 가장 큰 값을 지니는 것을 알 수 있다.
 
@@ -37,7 +39,7 @@ data$승하차인원 <- (data$승하차인원)/37
 data$Buzz_prop <- (data$Buzz_Sum)/(data$승하차인원)
 
 data[which(data$Buzz_prop == max(data$Buzz_prop)), ]
-#서울역의 인원대비 언급량 변수값이 너무 적다..!
+#서울역의 인원대비 언급량 변수값이 너무 크다..!
 
 
 ###############Mapping작업###############
@@ -58,18 +60,14 @@ MM2 <- MM +
   geom_point(aes(x = X , y = Y), data = data)
 ##점이 몰려있다. 어쩌면 특정 동/구를 핫플로 찾아낼 수 있을까?
 
-#조금 더 확대해서 상위 N개의 역만 나타내보자.
-Map_Seoul_B <- get_map(location=c(lat=37.55, lon=126.97), zoom=11, maptype="roadmap")
-MM_B <- ggmap(Map_Seoul_B)
-
 #Buzz_Prop에서 상위 20개의 언급량 값을 갖는 idx
 idx_20 <- which(data$Buzz_prop >= sort(data$Buzz_prop, decreasing=TRUE)[20])
 # all_data$Buzz_Sum[idx_20]
 
 #상위 20개의 지하철역 맵핑 (log transformation 활용하여 원크기 조절)
-MM3_20 <- MM_B +
+MM3_20 <- MM +
   geom_point(aes(x = X, y = Y, size = Buzz_prop), data = data[idx_20,]) + 
-  geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data[idx_20, ]) + 
+  #geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data[idx_20, ]) + 
   labs(x="경도", y="위도")
 
 
@@ -78,7 +76,7 @@ MM3_20 <- MM_B +
 
 ###K-means Clustering : 첫번째 시도
 
-mydata <- subset(data, select = c(영화관, 맛집, 카페, 데이트, 데이트코스, 술집, Buzz_prop, 상가개수)) #혼잡도_평일, 혼잡도_주말, 
+mydata <- subset(data, select = c(영화관, 맛집, 카페, 데이트, 데이트코스, 술집, Buzz_prop, 상가개수)) #혼잡도_평일, 혼잡도_주말 삭제 
 
 wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
 for (i in 2:15) wss[i] <- sum(kmeans(mydata, centers=i)$withinss)
@@ -104,6 +102,7 @@ MM4_mean <- MM_B +
 
 
 ###K-median Clustering : 두번째 시도
+
 K_data <- as.data.frame(mydata)
 wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
 
@@ -120,38 +119,38 @@ plot(2:15, wss[2:15], type="b",
      xlab="Number of Clusters",
      ylab="Within groups sum of squares")
 
-#Elbow point를 2로 설정
+#Elbow point를 4로 설정
 
-data_kmedian <- kGmedian(mydata, ncenters=6)
+data_kmedian <- kGmedian(mydata, ncenters=4)
 
 data$cluster_median <- as.factor(data_kmedian$cluster)
 #data_kmeans$centers
 
 
-MM4_median <- MM_B +
+MM4_median <- MM +
   geom_point(aes(x = X, y = Y, color = cluster_median), data = data, size = 3) + 
   #geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data) + 
   labs(x="경도", y="위도")
 
-hash_data <- read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\bak8_stable\\st-hashtag.txt', sep = '\n', encoding = 'UTF-8', skip = 1)
+MM4_median_1 <- MM +
+  geom_point(aes(x = X, y = Y, color = cluster_median), data = data[which(data$cluster_median == 1),] , size = 3) + 
+  #geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data) + 
+  labs(x="경도", y="위도")
 
+MM4_median_2 <- MM +
+  geom_point(aes(x = X, y = Y, color = cluster_median), data = data[which(data$cluster_median == 2),] , size = 3) + 
+  #geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data) + 
+  labs(x="경도", y="위도")
 
-Test <- unlist(strsplit(as.character(hash_data[1,]), ','))
+MM4_median_3 <- MM +
+  geom_point(aes(x = X, y = Y, color = cluster_median), data = data[which(data$cluster_median == 3),] , size = 3) + 
+  #geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data) + 
+  labs(x="경도", y="위도")
 
-X <- c()
-for (i in 3:ceiling(length(unlist(strsplit(as.character(hash_data[1,]), ',')))/2)) {
-  X <- append(X, rep(strsplit(Test, ':')[[i]][1], as.integer(strsplit(Test, ':')[[i+1]][2])))
-}
-
-X_3 <- c(X, X_2)
-
-WC_test <- sort(table(X_3), decreasing = TRUE)
-
-
-wordcloud(names(WC_test), freq = WC_test, scale = c(5, 1),
-          rot.per = 0.025, min.freq = 1, random.order = F,
-          random.color = T, colors = brewer.pal(9, 'Set1'))
-
+MM4_median_4 <- MM +
+  geom_point(aes(x = X, y = Y, color = cluster_median), data = data[which(data$cluster_median == 4),] , size = 3) + 
+  #geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data) + 
+  labs(x="경도", y="위도")
 
 
 ##########cnt_data로 Buzz_sum 추출##########
@@ -172,6 +171,35 @@ for (i in 2:ncol(station_cnt)) {
 }
 
 station_cnt$Buzz_Sum <- apply(station_cnt[, 2:32], sum, MARGIN = 1)
+
+
+
+#######################크롤링된 해시태그로 워드클라우드 만들기#######################
+
+hash_data <- read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\bak8_stable\\st-hashtag.txt', sep = '\n', encoding = 'UTF-8', skip = 1)
+
+Test <- unlist(strsplit(as.character(hash_data[1,]), ','))
+
+X <- c()
+for (i in 3:ceiling(length(unlist(strsplit(as.character(hash_data[1,]), ',')))/2)) {
+  X <- append(X, rep(strsplit(Test, ':')[[i]][1], as.integer(strsplit(Test, ':')[[i+1]][2])))
+}
+
+X_3 <- c(X, X_2)
+
+WC_test <- sort(table(X_3), decreasing = TRUE)
+
+
+wordcloud(names(WC_test), freq = WC_test, scale = c(5, 1),
+          rot.per = 0.025, min.freq = 1, random.order = F,
+          random.color = T, colors = brewer.pal(9, 'Set1'))
+
+
+
+
+
+###################1차 변수분석###################
+
 
 
 #boxplot - 원본 데이터
