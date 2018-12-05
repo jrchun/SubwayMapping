@@ -4,6 +4,8 @@ library(dplyr)
 library(devtools)
 library(ggmap)
 library(Gmedian)
+library(wordcloud)
+library(RColorBrewer)
 
 #Data merge (Subway location + theater)
 setwd('C:\\Users\\jrchu\\Desktop\\빅데이터\\data')
@@ -133,8 +135,6 @@ MM4_median <- MM_B +
 
 hash_data <- read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\bak8_stable\\st-hashtag.txt', sep = '\n', encoding = 'UTF-8', skip = 1)
 
-hash_data[1,]
-hash_data <- as.vector(hash_data)
 
 Test <- unlist(strsplit(as.character(hash_data[1,]), ','))
 
@@ -143,20 +143,15 @@ for (i in 3:ceiling(length(unlist(strsplit(as.character(hash_data[1,]), ',')))/2
   X <- append(X, rep(strsplit(Test, ':')[[i]][1], as.integer(strsplit(Test, ':')[[i+1]][2])))
 }
 
-WC_test <- sort(table(X), decreasing = TRUE)
+X_3 <- c(X, X_2)
 
-library(wordcloud)
-library(RColorBrewer)
+WC_test <- sort(table(X_3), decreasing = TRUE)
+
 
 wordcloud(names(WC_test), freq = WC_test, scale = c(5, 1),
           rot.per = 0.025, min.freq = 1, random.order = F,
           random.color = T, colors = brewer.pal(9, 'Set1'))
 
-Test_1 <- head(Test[3:length(Test)])
-
-head(unlist(strsplit(as.character(hash_data[1,]), ',')))
-head(unlist(strsplit(as.character(hash_data[1,]), ','))[3:length(strsplit(as.character(hash_data[1,]), ','))])
-gsub(" ", "", hash_data, fixed = TRUE)
 
 
 ##########cnt_data로 Buzz_sum 추출##########
