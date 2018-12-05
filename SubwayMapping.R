@@ -4,6 +4,7 @@ library(dplyr)
 library(devtools)
 library(ggmap)
 library(Gmedian)
+library(DMwR)
 library(wordcloud)
 library(RColorBrewer)
 
@@ -41,6 +42,32 @@ data$Buzz_prop <- (data$Buzz_Sum)/(data$승하차인원)
 data[which(data$Buzz_prop == max(data$Buzz_prop)), ]
 #서울역의 인원대비 언급량 변수값이 너무 크다..!
 
+##상가수의 0 : NA이므로, 평균값으로 대체
+
+data[which(data$상가개수 == 0), '상가개수'] <- NA
+data <- centralImputation(data)
+
+
+##########cnt_data로 Weekly_Buzz 추출##########
+cnt_data <- read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\nohash\\daily_cnt.txt', sep = '\n', encoding = 'UTF-8',skip = 3)
+station_cnt <- matrix(nrow = nrow(cnt_data), ncol = 9)
+for (i in 1:nrow(cnt_data)) {
+  {for (j in 1:9)
+    station_cnt[i,j] <- unlist(strsplit(as.character(cnt_data[i,]), ','))[j]
+  }
+}
+
+station_cnt <- as.data.frame(station_cnt)
+station_cnt <- station_cnt[, -2]
+
+for (i in 2:ncol(station_cnt)) {
+  station_cnt[, i] <- as.integer(station_cnt[, i])
+}
+
+station_cnt$Weekly_buzz <- apply(station_cnt[, 2:8], sum, MARGIN = 1)
+
+data$Weekly_buzz <- station_cnt$Weekly_buzz
+
 
 ###############Mapping작업###############
 
@@ -75,8 +102,8 @@ MM3_20 <- MM +
 
 
 ###K-means Clustering : 첫번째 시도
-
-mydata <- subset(data, select = c(영화관, 맛집, 카페, 데이트, 데이트코스, 술집, Buzz_prop, 상가개수)) #혼잡도_평일, 혼잡도_주말 삭제 
+#혼잡도_평일, 혼잡도_주말, Buzz_Sum, 승하차인원, 좌표 삭제
+mydata <- subset(data, select = c(영화관, 맛집, 카페, 데이트, 데이트코스, 술집, Buzz_prop, 상가개수, Weekly_buzz))
 
 wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
 for (i in 2:15) wss[i] <- sum(kmeans(mydata, centers=i)$withinss)
@@ -153,26 +180,8 @@ MM4_median_4 <- MM +
   labs(x="경도", y="위도")
 
 
-##########cnt_data로 Buzz_sum 추출##########
-cnt_data <- read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\nohash\\daily_cnt.txt', sep = '\n', encoding = 'UTF-8',skip = 3)
-station_cnt <- matrix(nrow = nrow(cnt_data), ncol = 33)
-for (i in 1:nrow(cnt_data)) {
-  {for (j in 1:33)
-    station_cnt[i,j] <- unlist(strsplit(as.character(cnt_data[i,]), ','))[j]
-  }
-}
 
-station_cnt <- as.data.frame(station_cnt)
-station_cnt <- station_cnt[, -2]
-colnames(station_cnt) <- c('Station', 31:1)
 
-for (i in 2:ncol(station_cnt)) {
-  station_cnt[, i] <- as.integer(station_cnt[, i])
-}
-
-station_cnt$Buzz_Sum <- apply(station_cnt[, 2:32], sum, MARGIN = 1)
-
-############완성!
 
 #######################크롤링된 해시태그로 워드클라우드 만들기#######################
 
@@ -220,63 +229,4 @@ wordcloud(names(WC_test_4), freq = WC_test_4, scale = c(5, 1),
 
 
 
-###################1차 변수분석###################
 
-
-
-#boxplot - 원본 데이터
-boxplot(data_p,col=rainbow(7),ylim=c(0,20000),main="Boxplot of data")
-#theater이 다른 데이터에 비해 심하게 데이터 수가 적음을 알 수 있다.
-
-#histogram - 원본 데이터 
-par(mfrow=c(3,3))
-hist(theater)
-hist(food)
-hist(cafe)
-hist(date,xlim=c(0,10000))
-hist(date2,xlim=c(0,1000))
-hist(bar,xlim=c(0,10000))
-hist(buzzsum,xlim=c(0,500000))
-#히스토그램을 통해서 확인해보니 데이터가 분포 차이가 심하다는 것을 알 수 있다.
-
-#데이터를 로그변환함 
-theater2<-log(theater)
-food2<-log(food)
-cafe2<-log(cafe)
-date3<-log(date)
-date4<-log(date2)
-bar2<-log(bar)
-buzzsum2<-log(buzzsum)
-
-data_p2<-cbind(theater2,food2,cafe2,date3,date4,bar2,buzzsum2)
-head(data_p2)
-
-#boxplot - 로그변환 데이터 
-boxplot(data_p2,col=rainbow(7),ylim=c(-5,20),main="Boxplot of logdata")
-#data를 log 변환하니 데이터사이의 분포 차이가 좀 줄었음을 알 수 있다.
-
-#histogram - 로그변환 데이터 
-par(mfrow=c(3,3))
-hist(theater2)
-hist(food2)
-hist(cafe2)
-hist(date3)
-hist(date4)
-hist(bar2)
-hist(buzzsum2)
-#로그변환을하니 어느정도 변수들간의 차이가 줄어듬을 알 수 있다.
-
-
-#######수집데이터 모양 확인하기.
-lapply(all_data[, -c(1, 2)], summary)
-
-#강남역이 150만으로 다른 지하철역에 비하여 압도적인 언급량을 보이는 것을 알 수 있다. Outlier의 가능성!
-pairs(log(all_buzz[, -1]))
-pairs(all_buzz[, -1])
-#술집&맛집&카페&데이트&총계 간의 상관관계를 scatter_plot으로 확인, 이상하게 데이트코스 변수는 상관관계가 약해보인다.
-
-##Buzz_Sum의 데이터 모양 확인하기
-par(mfrow = c(2,1))
-hist(all_data$Buzz_Sum) #너무 왼쪽에 치우쳐 있다. 
-##Log_Transformation!!
-hist(log(all_data$Buzz_Sum)) #강남역 빼고는 볼만하다.
