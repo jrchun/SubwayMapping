@@ -178,27 +178,45 @@ station_cnt$Buzz_Sum <- apply(station_cnt[, 2:32], sum, MARGIN = 1)
 
 hash_data <- read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\bak8_stable\\st-hashtag.txt', sep = '\n', encoding = 'UTF-8', skip = 1)
 
-Test <- unlist(strsplit(as.character(hash_data[1,]), ','))
-
-X <- c()
-for (i in 3:ceiling(length(unlist(strsplit(as.character(hash_data[1,]), ',')))/2)) {
-  X <- append(X, rep(strsplit(Test, ':')[[i]][1], as.integer(strsplit(Test, ':')[[i+1]][2])))
+Test <- 0
+A <- list()
+for (i in 1:280) {
+  Test <- unlist(strsplit(as.character(hash_data[i,]), ','))
+  X <- c()
+  for (j in 3:ceiling(length(unlist(strsplit(as.character(hash_data[i,]), ',')))/2)) {
+    X <- append(X, rep(strsplit(Test, ':')[[j]][1], as.integer(strsplit(Test, ':')[[j+1]][2])))
+  }
+  A[[i]] <- X
 }
 
-X_3 <- c(X, X_2)
+cluster_1_hash <- unlist(A[which(data$cluster_median == 1)])
+cluster_2_hash <- unlist(A[which(data$cluster_median == 2)])
+cluster_3_hash <- unlist(A[which(data$cluster_median == 3)])
+cluster_4_hash <- unlist(A[which(data$cluster_median == 4)])
 
-WC_test <- sort(table(X_3), decreasing = TRUE)
+WC_test_1 <- sort(table(cluster_1_hash), decreasing = TRUE)
+WC_test_2 <- sort(table(cluster_2_hash), decreasing = TRUE)
+WC_test_3 <- sort(table(cluster_3_hash), decreasing = TRUE)
+WC_test_4 <- sort(table(cluster_4_hash), decreasing = TRUE)
 
 
-wordcloud(names(WC_test), freq = WC_test, scale = c(5, 1),
-          rot.per = 0.025, min.freq = 1, random.order = F,
+wordcloud(names(WC_test_1), freq = WC_test_1, scale = c(5, 1),
+          rot.per = 0.025, min.freq = 5, random.order = F,
           random.color = T, colors = brewer.pal(9, 'Set1'))
 
-############Now I have to do.
-############1. 280개의 역에대해서 각각 해시태그벡터(rep함수 적용한 것) 붙이는 방법 -> 아마도 가상의 데이터프레임을 만들고 뒤에 붙이는 식?
-############2. 붙여낸 데이터프레임에 역에 해당하는 클러스터 부여한다.
-############3. 그룹화된 클러스터를 기반으로 4~5개의 워드클라우드를 위한 큰 벡터 -> 테이블 만들기.
-############4. 4~5개의 워드클라우드 생성한 뒤 결론 도출해내기.
+wordcloud(names(WC_test_2), freq = WC_test_2, scale = c(5, 1),
+          rot.per = 0.025, min.freq = 5, random.order = F,
+          random.color = T, colors = brewer.pal(9, 'Set1'))
+
+wordcloud(names(WC_test_3), freq = WC_test_3, scale = c(5, 1),
+          rot.per = 0.025, min.freq = 5, random.order = F,
+          random.color = T, colors = brewer.pal(9, 'Set1'))
+
+wordcloud(names(WC_test_4), freq = WC_test_4, scale = c(5, 1),
+          rot.per = 0.025, min.freq = 5, random.order = F,
+          random.color = T, colors = brewer.pal(9, 'Set1'))
+
+
 
 
 
