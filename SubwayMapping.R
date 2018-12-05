@@ -131,30 +131,50 @@ MM4_median <- MM_B +
   #geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data) + 
   labs(x="경도", y="위도")
 
-hash_data <- read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\hash\\st-hashtag.txt', sep = '\n', encoding = 'UTF-8')
+hash_data <- read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\bak8_stable\\st-hashtag.txt', sep = '\n', encoding = 'UTF-8', skip = 2)
 str(hash_data)
+hash_data[1,]
+hash_data <- as.vector(hash_data)
+
+Test <- unlist(strsplit(as.character(hash_data[1,]), ','))
+
+A <- unlist(strsplit(as.character(hash_data[1,]), ','))[3:length(unlist(strsplit(as.character(hash_data[1,]), ',')))]
+
+X <- c()
+for (i in 3:ceiling(length(unlist(strsplit(as.character(hash_data[1,]), ',')))/2)) {
+  X <- append(X, rep(strsplit(Test, ':')[[i]][1], as.integer(strsplit(Test, ':')[[i+1]][2])))
+}
+
+table(X)
+
+
+
+
+Test_1 <- head(Test[3:length(Test)])
+
+head(unlist(strsplit(as.character(hash_data[1,]), ',')))
+head(unlist(strsplit(as.character(hash_data[1,]), ','))[3:length(strsplit(as.character(hash_data[1,]), ','))])
+gsub(" ", "", hash_data, fixed = TRUE)
+
+
+##########cnt_data로 Buzz_sum 추출##########
 cnt_data <- read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\nohash\\daily_cnt.txt', sep = '\n', encoding = 'UTF-8',skip = 3)
-
-A <- matrix(nrow = 277, ncol = 33)
-
-for (i in 1:277) {
+station_cnt <- matrix(nrow = nrow(cnt_data), ncol = 33)
+for (i in 1:nrow(cnt_data)) {
   {for (j in 1:33)
-    A[i,j] <- unlist(strsplit(as.character(cnt_data[i,]), ','))[j]
+    station_cnt[i,j] <- unlist(strsplit(as.character(cnt_data[i,]), ','))[j]
   }
 }
 
-A <- as.data.frame(A)
-A <- A[, -2]
-colnames(A) <- c('Station', 31:1)
+station_cnt <- as.data.frame(station_cnt)
+station_cnt <- station_cnt[, -2]
+colnames(station_cnt) <- c('Station', 31:1)
 
-A[2, 2:32]
-for (i in 2:ncol(A)) {
-  A[, i] <- as.integer(A[, i])
+for (i in 2:ncol(station_cnt)) {
+  station_cnt[, i] <- as.integer(station_cnt[, i])
 }
 
-A$Sum <- apply(A[, 2:32], sum, MARGIN = 1)
-
-
+station_cnt$Buzz_Sum <- apply(station_cnt[, 2:32], sum, MARGIN = 1)
 
 
 #boxplot - 원본 데이터
