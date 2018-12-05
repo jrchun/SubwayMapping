@@ -122,7 +122,7 @@ data$cluster_mean <- as.factor(data_kmeans$cluster)
 
 
 
-MM4_mean <- MM_B +
+MM4_mean <- MM +
   geom_point(aes(x = X, y = Y, color = cluster_mean), data = data, size = 3) + 
   #geom_text(aes(x= X, y= Y, label=Station), colour="red", vjust=1, size=3.5, fontface="bold", data= data) + 
   labs(x="경도", y="위도")
@@ -185,7 +185,7 @@ MM4_median_4 <- MM +
 
 #######################크롤링된 해시태그로 워드클라우드 만들기#######################
 
-hash_data <- read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\bak8_stable\\st-hashtag.txt', sep = '\n', encoding = 'UTF-8', skip = 1)
+hash_data <- read.table('C:\\Users\\jrchu\\Desktop\\빅데이터\\data\\hash_total.txt', sep = '\n', encoding = 'UTF-8', skip = 1)
 
 Test <- 0
 A <- list()
@@ -209,24 +209,34 @@ WC_test_3 <- sort(table(cluster_3_hash), decreasing = TRUE)
 WC_test_4 <- sort(table(cluster_4_hash), decreasing = TRUE)
 
 
-wordcloud(names(WC_test_1), freq = WC_test_1, scale = c(5, 1),
+wordcloud(names(WC_test_1), freq = WC_test_1, scale = c(4, .2),
+          rot.per = 0.025, min.freq = 5, random.order = F,
+          random.color = T, colors = brewer.pal(9, 'Set1'))
+##까페, 커피, coffee등
+wordcloud(names(WC_test_2), freq = WC_test_2, scale = c(4, .2),
+          rot.per = 0.025, min.freq = 5, random.order = F,
+          random.color = T, colors = brewer.pal(9, 'Set1'))
+##서울나들이
+wordcloud(names(WC_test_3), freq = WC_test_3, scale = c(4, .2),
+          rot.per = 0.025, min.freq = 5, random.order = F,
+          random.color = T, colors = brewer.pal(9, 'Set1'))
+##먹다, 음식점, 존맛...
+wordcloud(names(WC_test_4), freq = WC_test_4, scale = c(4, .2),
           rot.per = 0.025, min.freq = 5, random.order = F,
           random.color = T, colors = brewer.pal(9, 'Set1'))
 
-wordcloud(names(WC_test_2), freq = WC_test_2, scale = c(5, 1),
-          rot.per = 0.025, min.freq = 5, random.order = F,
-          random.color = T, colors = brewer.pal(9, 'Set1'))
+C1 <- data[which(data$cluster_median==1), 'Station']
+C1_idx <- order(data[which(data$cluster_median==1), "Buzz_prop"], decreasing = TRUE)[1:3]
+C1[C1_idx]
 
-wordcloud(names(WC_test_3), freq = WC_test_3, scale = c(5, 1),
-          rot.per = 0.025, min.freq = 5, random.order = F,
-          random.color = T, colors = brewer.pal(9, 'Set1'))
+C2 <- data[which(data$cluster_median==2), 'Station']
+C2_idx <- order(data[which(data$cluster_median==2), "Buzz_prop"], decreasing = TRUE)[1:3]
+C2[C2_idx]
 
-wordcloud(names(WC_test_4), freq = WC_test_4, scale = c(5, 1),
-          rot.per = 0.025, min.freq = 5, random.order = F,
-          random.color = T, colors = brewer.pal(9, 'Set1'))
+C3 <- data[which(data$cluster_median==3), 'Station']
+C3_idx <- order(data[which(data$cluster_median==3), "Buzz_prop"], decreasing = TRUE)[1:3]
+C3[C3_idx]
 
-
-
-
-
-
+C4 <- data[which(data$cluster_median==4), 'Station']
+C4_idx <- order(data[which(data$cluster_median==4), "Buzz_prop"], decreasing = TRUE)[1:3]
+C4[C4_idx]
