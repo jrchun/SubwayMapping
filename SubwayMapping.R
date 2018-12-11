@@ -69,7 +69,7 @@ station_cnt$Weekly_buzz <- apply(station_cnt[, 2:8], sum, MARGIN = 1)
 data$Weekly_buzz <- station_cnt$Weekly_buzz
 
 
-###############Mapping작업###############
+##############Mapping작업##############
 
 
 ##구글맵 API
